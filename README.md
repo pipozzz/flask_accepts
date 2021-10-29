@@ -1,9 +1,27 @@
 [![codecov](https://codecov.io/gh/apryor6/flask_accepts/branch/master/graph/badge.svg)](https://codecov.io/gh/apryor6/flask_accepts)
 [![license](https://img.shields.io/github/license/apryor6/flask_accepts)](https://img.shields.io/github/license/apryor6/flask_accepts)
+[![code_style](https://img.shields.io/badge/code%20style-black-000000.svg)](https://img.shields.io/badge/code%20style-black-000000.svg)
+
+---
+
+- [flask_accepts](#flask-accepts)
+  - [Installation](#installation)
+  - [Basic usage](#basic-usage)
+  - [Usage with "vanilla Flask"](#usage-with--vanilla-flask-)
+  * [Usage with Marshmallow schemas](#usage-with-marshmallow-schemas)
+    - [Marshmallow validators](#marshmallow-validators)
+    - [Default values](#default-values)
+  * [Automatic Swagger documentation](#automatic-swagger-documentation)
+    - [Defining the model name](#defining-the-model-name)
+    - [Error handling](#error-handling)
+    - [Specifying response codes](#specifying-response-codes)
+- [Development setup](#development-setup)
+
+---
 
 # flask_accepts
 
-I love `reqparse` from `Flask-RESTplus` for input validation, but I found it hard to keep all of the different decorators and what they do straight, and I got sick of writing code like this in every endpoint:
+I love `reqparse` from `Flask-restx` for input validation, but I found it hard to keep all of the different decorators and what they do straight, and I got sick of writing code like this in every endpoint:
 
 ```
 parser = reqparse.RequestParser()
@@ -16,7 +34,7 @@ And I also love Marshmallow, but the two technologies don't really play well tog
 
 So I made `flask_accepts`, which gives you two simple decorators, `accepts` and `responds`, that combine these two libraries in a way that's easy-to-use for input/output handling in Flask. The `@accepts` decorators defines what parameters or schemas the endpoint accepts, returning errors if the inputs fail validation, and `@responds` defines how to serialize the output, supporting both `reqparse` models and `Marshmallow` schemas.
 
-This makes it easy to create a serialization layer on your API outputs without having to write a lot of extra code while allowing usage of RESTplus and Marshmallow side-by-side. It will also automatically add the Swagger integrations from `Flask-RESTplus` where possible without you have to explicitly add the various RESTplus decorators (it does that for you). _This includes supporting Swagger even if you provided a Marshmallow schema -- the type mapping is handled internally._
+This makes it easy to create a serialization layer on your API outputs without having to write a lot of extra code while allowing usage of restx and Marshmallow side-by-side. It will also automatically add the Swagger integrations from `Flask-restx` where possible without you have to explicitly add the various restx decorators (it does that for you). _This includes supporting Swagger even if you provided a Marshmallow schema -- the type mapping is handled internally._
 
 `accepts` takes input parameter information and internally parses those arguments and attaches the results to the Flask `request` object in `request.parsed_args`
 
@@ -26,16 +44,18 @@ This makes it easy to create a serialization layer on your API outputs without h
 
 Simple, `pip install flask_accepts`
 
+Note, running the example code from the source directory will require Python 3.7 or greater as these leverage dataclasses.
+
 ### Basic usage
 
-Here is a basic example of an endpoint that takes a couple of URL query params and returns a new Widget. The `accepts` and `responds` decorators both take as positional arguments any number of dictionaries that will be passed to `flask_restful.reqparse.ArgumentParser` (see [here](https://flask-restplus.readthedocs.io/en/stable/parsing.html)). A Marshmallow schema may be passed with the `schema` parameter. These different arguments can be mixed as you see fit.
+Here is a basic example of an endpoint that takes a couple of URL query params and returns a new Widget. The `accepts` and `responds` decorators both take as positional arguments any number of dictionaries that will be passed to `flask_restful.reqparse.ArgumentParser` (see [here](https://flask-restx.readthedocs.io/en/stable/parsing.html)). A Marshmallow schema may be passed with the `schema` parameter. These different arguments can be mixed as you see fit.
 
 ```python
 from dataclasses import dataclass
 from marshmallow import Schema, fields, post_load
 from flask import Flask, request
 from flask_accepts import accepts, responds
-from flask_restplus import Api, Resource
+from flask_restx import Api, Resource
 
 
 @dataclass
@@ -77,16 +97,17 @@ from flask_accepts import accepts, responds
 
 from .widget import Widget, WidgetSchema, make_widget
 
+
 def create_app():
     app = Flask(__name__)
 
     @app.route("/widget")
-    @accepts(dict(name="foo", type=str), api=api)
-    @responds(schema=WidgetSchema, api=api)
-    def widget()
+    @accepts(dict(name="foo", type=str))
+    @responds(schema=WidgetSchema)
+    def widget():
         name: str = request.parsed_args["foo"]
-	widget: Widget = make_widget(name)
-	return widget
+        widget: Widget = make_widget(name)
+        return widget
 
     return app
 ```
@@ -94,7 +115,7 @@ def create_app():
 ## Usage with Marshmallow schemas
 
 Both the `accepts` and `responds` decorators will accept a keyword argument `schemas` that
-is a Marshmallow Schema. You also provide the `api` namespace that you would like the Swagger documentation to be attached to. Under-the-hood, `flask_accepts` will handle conversion of the provided Marshmallow schema to an equivalent Flask-RESTplus `api.Model`, giving you the powerful control of Marshmallow combined with the awesomness of Swagger.
+is a Marshmallow Schema. You also provide the `api` namespace that you would like the Swagger documentation to be attached to. Under-the-hood, `flask_accepts` will handle conversion of the provided Marshmallow schema to an equivalent Flask-restx `api.Model`, giving you the powerful control of Marshmallow combined with the awesomness of Swagger.
 
 For `accepts`, the schema will be used to parse the JSON body
 of a request, and the result will be stored in the Flask request object at `request.parsed_obj`. Note that this input is the _class_ of the schema, not an object of it. The object creation is handled internally. You can use the `post_load` decorator to control exactly what object is returned when the `load` method of the schema is called. See [here](https://marshmallow.readthedocs.io/en/3.0/extending.html) for more information.
@@ -103,7 +124,7 @@ For `responds`, the schema will be used to dump the returned value from the deco
 
 For both decorators, you can pass a schema instance, which allows you to pass additional parameters such as `many=True`
 
-The following example includes examples of both Flask-RESTplus style endpoints with a Resource class containing REST methods as well as a "vanilla" Flask endpoint, which is just a function.
+The following example includes examples of both Flask-restx style endpoints with a Resource class containing REST methods as well as a "vanilla" Flask endpoint, which is just a function.
 
 ```python
 from dataclasses import dataclass
@@ -128,7 +149,7 @@ class WidgetSchema(Schema):
 
 
 def create_app(env=None):
-    from flask_restplus import Api, Namespace, Resource
+    from flask_restx import Api, Namespace, Resource
 
     app = Flask(__name__)
     api = Api(app)
@@ -141,7 +162,7 @@ def create_app(env=None):
 
         return request.parsed_obj
 
-    @api.route("/restplus/make_a_widget")
+    @api.route("/restx/make_a_widget")
     class WidgetResource(Resource):
         @accepts(dict(name="some_arg", type=str), schema=WidgetSchema, api=api)
         @responds(schema=WidgetSchema, api=api)
@@ -176,7 +197,7 @@ Under-the-hood, `flask_accepts` translates and combines the provided dictionarie
 
 ```python
 
-@api.route("/restplus/make_a_widget")
+@api.route("/restx/make_a_widget")
 class WidgetResource(Resource):
     @accepts(
         "Widget",
@@ -193,7 +214,7 @@ class WidgetResource(Resource):
 This could also be written with keyword arguments as:
 
 ```python
-@api.route("/restplus/make_a_widget")
+@api.route("/restx/make_a_widget")
 class WidgetResource(Resource):
     @accepts(
         dict(name="some_arg", type=str),
@@ -274,7 +295,7 @@ class WidgetSchema(Schema):
 
 
 def create_app(env=None):
-    from flask_restplus import Api, Namespace, Resource
+    from flask_restx import Api, Namespace, Resource
 
     app = Flask(__name__)
     api = Api(app)
@@ -287,7 +308,7 @@ def create_app(env=None):
 
         return request.parsed_obj
 
-    @api.route("/restplus/make_a_widget")
+    @api.route("/restx/make_a_widget")
     class WidgetResource(Resource):
         @accepts("Widget", dict(name="some_arg", type=str), schema=WidgetSchema, api=api)
         @responds(schema=WidgetSchema, api=api, status_code=201)
@@ -303,3 +324,12 @@ app = create_app()
 if __name__ == "__main__":
     app.run(debug=True)
 ```
+
+# Development setup
+
+To install _flask_accepts_ for development, fork or clone the repository, create virtual environment
+and while active install dev requirements.
+
+    (venv) [user@station flask_accepts]$ pip install -r dev-requirements.txt
+
+Plesae follow contribution [guidelines](https://opensource.guide/how-to-contribute/), add comments and document your changes before providing a pull request.

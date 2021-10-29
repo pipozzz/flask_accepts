@@ -70,3 +70,66 @@
   0.11.2
 
 - Fix a bug where nested Schemas were using default model names where the actual name was available
+
+  0.12.0
+
+- Implement load_only and dump_only suppoort for Marshmallow schemas
+
+  0.12.11
+
+- Add a deprecation warning
+
+  0.13.0
+
+- Enable "self" parameter for nested Marshmallow schemas 
+
+  0.14.0
+
+- Only append model names with the operation if necessary for prettier resulting model names in most cases
+
+  0.14.1
+
+- Add 'required', 'default' and 'description' fields to result Swagger docs
+
+  0.14.2
+
+- Add support for schema instances in marshmallow nested fields. 
+
+  0.15.0
+
+- Add support for `validate` parameter on `@responds`
+  0.15.1
+
+- Patch a broken test
+
+  0.15.2
+
+- Fix a bug where providing the location explicitly threw an exception
+  
+  0.15.3
+
+- Fix a bug where providing the location would not validate in headers
+
+  0.15.4
+
+- Fix a bug to enable many=True in schemas
+
+  0.16.0
+
+- Convert from Flask-RESTplus to flask-restx
+
+  0.16.2
+
+- Hande X-Fields header 
+
+  0.17.0
+
+- Enable passing of Schema to query params and headers
+  
+  0.17.1
+
+- Add support for envelope parameter
+
+  0.17.4
+
+- Removed partial argument of accepts() because it breaks the passed in schema instance
